@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Excel\LeitorExcelController;
+use App\Http\Controllers\Whatsapp\WhatsAppController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -18,4 +19,5 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+Route::get('/send-messages', [WhatsAppController::class, 'sendMessagesToAll']);
 //Route::post('/excel/import', [LeitorExcelController::class, 'store']);
