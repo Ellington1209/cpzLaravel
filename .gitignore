@@ -1,0 +1,7 @@
+# Ignorar dados do MySQL
+.docker/mysql/dbdata/
+vendor/
+composer.lock
+
+# Ignorar o arquivo .env
+.env
