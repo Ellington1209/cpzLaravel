@@ -10,9 +10,10 @@ class Membro extends Model
     use HasFactory;
     protected $fillable = [
         'name',
-        'name_fantasia',
+        'nome_crente',
         'telefone_celular',
         'telefone_fixo',
         'whatsapp',
+        'status'
     ];
 }

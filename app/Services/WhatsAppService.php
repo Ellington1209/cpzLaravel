@@ -46,4 +46,38 @@ class WhatsAppService
             ];
         }
     }
+
+    public function sendMediaMessage($number, $mediaType, $fileName, $caption, $mediaBase64, $instanceName = 'tom')
+    {
+        try {
+            $url = "{$this->baseUrl}/message/sendMedia/{$instanceName}";
+
+            $response = Http::withHeaders([
+                'apikey' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($url, [
+                'number' => $number,
+                'mediaMessage' => [
+                    'mediatype' => $mediaType, // image, video, etc.
+                    'fileName' => $fileName,
+                    'caption' => $caption,
+                    'media' => $mediaBase64, // Arquivo codificado em Base64
+                ],
+                'options' => [
+                    'presence' => 'composing',
+                    'delay' => 0,
+                ],
+            ]);
+
+            return [
+                'success' => $response->status() === 200,
+                'response' => $response->json(),
+            ];
+        } catch (\Exception $e) {
+            return [
+                'success' => false,
+                'details' => $e->getMessage(),
+            ];
+        }
+    }
 }
