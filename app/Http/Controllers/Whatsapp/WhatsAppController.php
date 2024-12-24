@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Whatsapp;
 
 use App\Http\Controllers\Controller;
+use App\Models\Membro\Membro;
 use App\Models\User;
 use App\Models\Whatsapp\WhatsAppLog;
 use App\Services\WhatsAppService;
@@ -21,9 +22,10 @@ class WhatsAppController extends Controller
     {
         try {
             // Busca todos os usuários no banco
-            $users = User::all();
+            $users = Membro::all();
+
             $validatedData = $request->validate([
-                'message' => 'required|string|max:1000',               
+                'message' => 'required|string|max:1000',
             ]);
 
             if ($users->isEmpty()) {
@@ -34,12 +36,15 @@ class WhatsAppController extends Controller
             }
 
             $results = [];
-            $message = $validatedData['message'];
+            $messageTemplate = $validatedData['message'];
 
             foreach ($users as $user) {
                 if ($user->telefone_celular) {
+                    // Substitui @nome pelo nome_crente do usuário
+                    $personalizedMessage = str_replace('@nome', $user->nome_crente, $messageTemplate);
+
                     $formattedNumber = '55' . $user->telefone_celular;
-                    $response = $this->whatsAppService->sendMessage($formattedNumber, $message);
+                    $response = $this->whatsAppService->sendMessage($formattedNumber, $personalizedMessage);
 
                     $status = $response['success'] ? 'Enviado' : 'Erro';
                     $details = $response['response'] ?? $response['details'];
@@ -48,9 +53,9 @@ class WhatsAppController extends Controller
                     WhatsAppLog::create([
                         'user_name' => $user->name,
                         'phone_number' => $formattedNumber,
-                        'message' => $message,
+                        'message' => $personalizedMessage,
                         'status' => $status,
-                        'details' => json_encode($details), // Armazena os detalhes como JSON
+                        'details' => json_encode($details),
                     ]);
 
                     $results[] = [
@@ -75,6 +80,7 @@ class WhatsAppController extends Controller
             ]);
         }
     }
+
 
 
     public function sendMedia(Request $request)
@@ -147,5 +153,4 @@ class WhatsAppController extends Controller
             ]);
         }
     }
-    
 }
