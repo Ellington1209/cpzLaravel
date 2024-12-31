@@ -15,7 +15,7 @@ class WhatsAppService
         $this->apiKey = env('WHATSAPP_API_KEY'); // Defina sua API Key no .env
     }
 
-    public function sendMessage($number, $message, $instanceName = 'tom')
+    public function sendMessage($number, $message, $instanceName = 'prMarcio')
     {
         try {
             $url = "{$this->baseUrl}/message/sendText/{$instanceName}";

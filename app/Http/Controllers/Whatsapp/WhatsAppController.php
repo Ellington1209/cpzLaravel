@@ -22,33 +22,39 @@ class WhatsAppController extends Controller
     {
         try {
             // Busca todos os usuários no banco
-            $users = Membro::all();
-
+            $users = User::all();
+    
             $validatedData = $request->validate([
                 'message' => 'required|string|max:1000',
             ]);
-
+    
             if ($users->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Nenhum usuário encontrado no banco de dados.',
                 ]);
             }
-
+    
             $results = [];
+            $allSuccess = true; // Variável para monitorar o sucesso geral
             $messageTemplate = $validatedData['message'];
-
+    
             foreach ($users as $user) {
                 if ($user->telefone_celular) {
                     // Substitui @nome pelo nome_crente do usuário
                     $personalizedMessage = str_replace('@nome', $user->nome_crente, $messageTemplate);
-
+    
                     $formattedNumber = '55' . $user->telefone_celular;
                     $response = $this->whatsAppService->sendMessage($formattedNumber, $personalizedMessage);
-
+    
                     $status = $response['success'] ? 'Enviado' : 'Erro';
                     $details = $response['response'] ?? $response['details'];
-
+    
+                    // Atualiza o sucesso geral caso haja algum erro
+                    if (!$response['success']) {
+                        $allSuccess = false;
+                    }
+    
                     // Salva o log no banco de dados
                     WhatsAppLog::create([
                         'user_name' => $user->name,
@@ -57,7 +63,7 @@ class WhatsAppController extends Controller
                         'status' => $status,
                         'details' => json_encode($details),
                     ]);
-
+    
                     $results[] = [
                         'user' => $user->name,
                         'number' => $formattedNumber,
@@ -66,10 +72,12 @@ class WhatsAppController extends Controller
                     ];
                 }
             }
-
+    
             return response()->json([
-                'success' => true,
-                'message' => 'Mensagens processadas.',
+                'success' => $allSuccess, // Retorna false se houve algum erro
+                'message' => $allSuccess 
+                    ? 'Mensagens processadas com sucesso.' 
+                    : 'Mensagens processadas com alguns erros.',
                 'results' => $results,
             ]);
         } catch (\Exception $e) {
@@ -80,7 +88,7 @@ class WhatsAppController extends Controller
             ]);
         }
     }
-
+    
 
 
     public function sendMedia(Request $request)
