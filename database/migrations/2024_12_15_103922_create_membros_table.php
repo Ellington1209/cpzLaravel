@@ -15,8 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('name_fantasia')->nullable();
-            $table->string('nome_crente', 14)->nullable();
+            $table->string('nome_crente', 150)->nullable();
             $table->string('telefone_fixo', 14)->nullable();
+            $table->string('telefone_celular', 14)->nullable();
             $table->string('whatsapp', 14)->nullable();
             $table->boolean('status')->default(true);
             $table->timestamps();

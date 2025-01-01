@@ -21,40 +21,54 @@ class WhatsAppController extends Controller
     public function sendMessagesToAll(Request $request)
     {
         try {
-            // Busca todos os usuários no banco
-            $users = User::all();
-    
             $validatedData = $request->validate([
                 'message' => 'required|string|max:1000',
+                'grupos' => 'nullable|array', // Aceita null ou um array
+                'grupos.*' => 'integer|exists:grupos,id', // Cada item no array deve ser um ID válido
             ]);
-    
+            
+          
+            // Busca os usuários com filtro de status
+            $usersQuery = Membro::where('status', 1); // Filtra apenas usuários ativos
+
+            // Filtra pelos grupos, se enviado
+            if (!empty($validatedData['grupos'])) {
+                $usersQuery->whereHas('grupos', function ($query) use ($validatedData) {
+                    $query->whereIn('id', $validatedData['grupos']);
+                });
+            }
+
+            $users = $usersQuery->get();
+
             if ($users->isEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Nenhum usuário encontrado no banco de dados.',
+                    'message' => 'Nenhum usuário ativo encontrado para o envio.',
                 ]);
             }
-    
+
             $results = [];
             $allSuccess = true; // Variável para monitorar o sucesso geral
             $messageTemplate = $validatedData['message'];
-    
+
             foreach ($users as $user) {
                 if ($user->telefone_celular) {
-                    // Substitui @nome pelo nome_crente do usuário
+                    // Personaliza a mensagem com @nome
                     $personalizedMessage = str_replace('@nome', $user->nome_crente, $messageTemplate);
-    
+
                     $formattedNumber = '55' . $user->telefone_celular;
+
+                    
                     $response = $this->whatsAppService->sendMessage($formattedNumber, $personalizedMessage);
-    
+
                     $status = $response['success'] ? 'Enviado' : 'Erro';
                     $details = $response['response'] ?? $response['details'];
-    
+
                     // Atualiza o sucesso geral caso haja algum erro
                     if (!$response['success']) {
                         $allSuccess = false;
                     }
-    
+
                     // Salva o log no banco de dados
                     WhatsAppLog::create([
                         'user_name' => $user->name,
@@ -63,7 +77,7 @@ class WhatsAppController extends Controller
                         'status' => $status,
                         'details' => json_encode($details),
                     ]);
-    
+
                     $results[] = [
                         'user' => $user->name,
                         'number' => $formattedNumber,
@@ -72,7 +86,7 @@ class WhatsAppController extends Controller
                     ];
                 }
             }
-    
+
             return response()->json([
                 'success' => $allSuccess, // Retorna false se houve algum erro
                 'message' => $allSuccess 
@@ -88,6 +102,7 @@ class WhatsAppController extends Controller
             ]);
         }
     }
+
     
 
 
@@ -99,23 +114,34 @@ class WhatsAppController extends Controller
                 'fileName' => 'required|string',
                 'caption' => 'nullable|string|max:1000',
                 'media' => 'required|file|mimes:jpg,png,mp4,pdf,mp3|max:2048', // Limite de tamanho e tipos permitidos
+               'grupos' => 'nullable|array', // Aceita null ou um array
+                'grupos.*' => 'integer|exists:grupos,id', // Cada item no array deve ser um ID válido
             ]);
-
+    
             // Codifica o arquivo em Base64
             $mediaBase64 = base64_encode(file_get_contents($request->file('media')->path()));
-
-            // Busca todos os usuários no banco
-            $users = User::all();
-
+    
+            // Busca os usuários com filtro de status
+            $usersQuery = Membro::where('status', 1); // Filtra apenas usuários ativos
+    
+            // Filtra pelos grupos, se enviado
+            if (!empty($validatedData['grupos'])) {
+                $usersQuery->whereHas('grupos', function ($query) use ($validatedData) {
+                    $query->whereIn('id', $validatedData['grupos']);
+                });
+            }
+    
+            $users = $usersQuery->get();
+    
             if ($users->isEmpty()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Nenhum usuário encontrado no banco de dados.',
+                    'message' => 'Nenhum usuário ativo encontrado para o envio.',
                 ]);
             }
-
+    
             $results = [];
-
+    
             foreach ($users as $user) {
                 if ($user->telefone_celular) {
                     $formattedNumber = '55' . $user->telefone_celular;
@@ -126,10 +152,10 @@ class WhatsAppController extends Controller
                         $validatedData['caption'] ?? '',
                         $mediaBase64
                     );
-
+    
                     $status = $response['success'] ? 'Enviado' : 'Erro';
                     $details = $response['response'] ?? $response['details'];
-
+    
                     // Salva o log no banco de dados
                     WhatsAppLog::create([
                         'user_name' => $user->name,
@@ -138,7 +164,7 @@ class WhatsAppController extends Controller
                         'status' => $status,
                         'details' => json_encode($details), // Armazena os detalhes como JSON
                     ]);
-
+    
                     $results[] = [
                         'user' => $user->name,
                         'number' => $formattedNumber,
@@ -147,7 +173,7 @@ class WhatsAppController extends Controller
                     ];
                 }
             }
-
+    
             return response()->json([
                 'success' => true,
                 'message' => 'Mensagens de mídia processadas.',
@@ -161,4 +187,5 @@ class WhatsAppController extends Controller
             ]);
         }
     }
+    
 }

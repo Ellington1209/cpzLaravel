@@ -2,8 +2,10 @@
 
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Excel\LeitorExcelController;
+use App\Http\Controllers\Grupo\GrupoController;
 use App\Http\Controllers\Membros\MembrosController;
 use App\Http\Controllers\Whatsapp\WhatsAppController;
+use App\Models\Grupo\Grupo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,13 +29,18 @@ Route::middleware(['auth:api'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    Route::post('/excel', [LeitorExcelController::class, 'store']);
+    // Route::post('/excel', [LeitorExcelController::class, 'store']);
 
    
 
     Route::prefix('whatsapp')->group(function () {
         Route::post('/send-text', [WhatsAppController::class, 'sendMessagesToAll']);
         Route::post('/send-media', [WhatsAppController::class, 'sendMedia']);
+    });
+
+    Route::prefix('grupo')->group(function () {  
+        Route::get('/', [GrupoController::class,'index']);   
+        Route::post('/create', [GrupoController::class,'cadastrarGrupo']);       
     });
     
     Route::prefix('membros')->group(function () {
